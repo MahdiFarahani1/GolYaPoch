@@ -17,7 +17,7 @@ class MatchCubit extends Cubit<MatchState> {
     emit(next);
     if (next.isFinished) {
       _store.archive(next);
-    } else if (remember || next.secondsLeft % 10 == 0 || next.phase != state.phase) {
+    } else if (remember || next.secondsLeft % 10 == 0) {
       _store.save(next);
     }
   }
@@ -194,6 +194,12 @@ class MatchCubit extends Cubit<MatchState> {
   void resolveCaptainDuel({required bool ownerProtected}) {
     if (state.phase != RoundPhase.captainDuel || state.crownOwner == null) return;
     final owner = state.crownOwner!;
+    if (!state.isCustom) {
+      final winner = ownerProtected ? owner : 1 - owner;
+      _apply(state.copyWith(phase: RoundPhase.finished, winner: winner,
+        note: 'دوئل داوری شد؛ برنده اعلام شد'));
+      return;
+    }
     if (ownerProtected) {
       _apply(state.copyWith(phase: RoundPhase.finished, winner: owner,
         note: 'دوئل به سود صاحب تاج؛ قهرمانی!'));
@@ -208,17 +214,77 @@ class MatchCubit extends Cubit<MatchState> {
       note: 'دوئل شکست خورد؛ ۵ امتیاز کسر شد'));
   }
 
-  /// Generic scorekeeping fallback for modes whose complete proprietary card rules
-  /// are not yet verified. The UI marks this clearly as manual referee mode.
+  /// The two existing physical games are assisted referee modes.
+  /// Unverified card effects are entered as points by a human official.
   void manualEvent({required bool found, required int points}) {
-    if (state.isCustom || state.phase == RoundPhase.finished) return;
+    if (state.isCustom || (state.phase != RoundPhase.guess &&
+        state.phase != RoundPhase.finalGuess)) return;
+    final oldHolder = state.holder;
+    final isCrown = state.isShahHand;
     final scores = List<int>.of(state.scores);
-    final receiver = found ? state.guesser : state.holder;
+    final receiver = found ? state.guesser : oldHolder;
+    if (isCrown && !found) {
+      _apply(state.copyWith(phase: RoundPhase.finished, winner: oldHolder,
+        note: 'شاه‌گل حفظ شد؛ قهرمانی تیم صاحب گل'));
+      return;
+    }
     scores[receiver] = CustomRules.addPoints(scores[receiver], points, state.settings);
+    if (isCrown && found && state.settings.mode == GameMode.filimo) {
+      final losses = List<int>.of(state.shahLosses);
+      losses[oldHolder]++;
+      if (losses[oldHolder] == 1) {
+        scores[oldHolder] = (scores[oldHolder] - 3).clamp(0, state.settings.scoreCap);
+        _apply(state.copyWith(scores: scores, holder: receiver,
+          shahLosses: losses, hand: state.hand + 1,
+          emptyGuesses: 0, secondsLeft: state.settings.turnSeconds,
+          phase: RoundPhase.guess,
+          note: 'اولین شکست شاه‌گل فیلیمو؛ ۳ امتیاز کم شد'));
+      } else {
+        _apply(state.copyWith(scores: scores, holder: receiver,
+          shahLosses: losses, crownOwner: oldHolder,
+          phase: RoundPhase.captainDuel,
+          note: 'شکست دوم شاه‌گل فیلیمو؛ نتیجه دوئل را داور ثبت می‌کند'));
+      }
+      return;
+    }
+    if (isCrown && found && state.settings.mode == GameMode.shahGol) {
+      _apply(state.copyWith(scores: scores, holder: receiver,
+        crownOwner: oldHolder, phase: RoundPhase.crownChoice,
+        note: 'شاه‌گل گرفته شد؛ داور نتیجه طبق دفترچه را ثبت کند'));
+      return;
+    }
     final winner = _directWinner(scores);
     _apply(state.copyWith(scores: scores, holder: receiver,
       winner: winner, phase: winner == null ? RoundPhase.guess : RoundPhase.finished,
       hand: state.hand + 1, secondsLeft: state.settings.turnSeconds,
+      emptyGuesses: 0,
       note: found ? 'گل گرفته شد' : 'گل حفظ شد'));
+  }
+
+  /// In the board game, until its instruction booklet is verified,
+  /// a human referee chooses the official outcome rather than an invented rule.
+  void manualCrownContinue({int penalty = 0}) {
+    if (state.isCustom || state.phase != RoundPhase.crownChoice ||
+        state.crownOwner == null || penalty < 0) return;
+    final scores = List<int>.of(state.scores);
+    final owner = state.crownOwner!;
+    scores[owner] = (scores[owner] - penalty).clamp(0, state.settings.scoreCap);
+    _apply(state.copyWith(scores: scores, clearCrown: true,
+      phase: RoundPhase.guess, hand: state.hand + 1,
+      secondsLeft: state.settings.turnSeconds, emptyGuesses: 0,
+      note: 'نتیجه شاه‌گل توسط داور ثبت شد'));
+  }
+
+  void manualDeclareWinner(int winner) {
+    if (state.isCustom || winner < 0 || winner > 1 || state.isFinished) return;
+    _apply(state.copyWith(phase: RoundPhase.finished, winner: winner,
+      note: 'نتیجه مسابقه توسط داور اعلام شد'));
+  }
+
+  void manualAdjustScore(int team, int delta) {
+    if (state.isCustom || state.isFinished || team < 0 || team > 1) return;
+    final scores = List<int>.of(state.scores);
+    scores[team] = CustomRules.addPoints(scores[team], delta, state.settings);
+    _apply(state.copyWith(scores: scores, note: 'تصحیح امتیاز توسط داور'));
   }
 }
