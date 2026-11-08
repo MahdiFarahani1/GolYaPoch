@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -158,6 +159,15 @@ class _CustomActions extends StatelessWidget {
       const SizedBox(height:10),
       OutlinedButton(onPressed:()=>cubit.captainPrediction(false),child:const Text('گل را پیدا نمی‌کنند')),
     ]));
+    if(state.phase==RoundPhase.finalGuess && 
+      (state.power==CardPower.hunter || state.power==CardPower.hourglass))
+      return RoyalPanel(highlight:true,child:Column(children:[
+        Text('آخرین انتخاب با ${state.power!.title}',style:const TextStyle(fontWeight:FontWeight.w800)),
+        const SizedBox(height:12),
+        FilledButton(onPressed:()=>cubit.specialChoice(correct:true),child:const Text('انتخاب صحیح بود')),
+        const SizedBox(height:10),
+        OutlinedButton(onPressed:()=>cubit.specialChoice(correct:false),child:const Text('انتخاب اشتباه بود')),
+      ]));
     if(state.phase==RoundPhase.finalGuess)return RoyalPanel(highlight:true,child:Column(children:[
       const Text('فقط یک انتخاب نهایی باقی‌مانده!',style:TextStyle(fontSize:17,fontWeight:FontWeight.w800)),
       const SizedBox(height:12),

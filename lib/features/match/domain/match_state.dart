@@ -18,6 +18,9 @@ class MatchState {
     this.crownOwner,
     this.winner,
     this.hand = 1,
+    this.offensiveUsed = false,
+    this.defensiveUsed = false,
+    this.shahLosses = const [0, 0],
     this.note = 'مسابقه آغاز شد',
   });
 
@@ -37,13 +40,16 @@ class MatchState {
   final int? crownOwner;
   final int? winner;
   final int hand;
+  final bool offensiveUsed;
+  final bool defensiveUsed;
+  final List<int> shahLosses;
   final String note;
 
   int get guesser => 1 - holder;
   bool get isCustom => settings.mode == GameMode.nabardGol;
   bool get isShahHand => settings.shahGolEnabled && scores[holder] >= settings.shahThreshold;
   bool get isFinished => phase == RoundPhase.finished;
-  bool get canPlayCard => isCustom && phase == RoundPhase.guess && power == null && emptyGuesses == 0 && !freePoisonEmpty;
+  bool get canPlayCard => isCustom && phase == RoundPhase.guess && power == null && !offensiveUsed && emptyGuesses == 0 && !freePoisonEmpty;
   bool get isFinalChoice => phase == RoundPhase.finalGuess;
 
   MatchState copyWith({
@@ -52,7 +58,8 @@ class MatchState {
     int? emptyGuesses, bool? freePoisonEmpty, CardPower? power,
     bool clearPower = false, bool? prediction, bool clearPrediction = false,
     int? phoenixReward, int? crownOwner, bool clearCrown = false,
-    int? winner, int? hand, String? note,
+    int? winner, int? hand, bool? offensiveUsed, bool? defensiveUsed,
+    List<int>? shahLosses, String? note,
   }) => MatchState(
     settings: settings, teams: teams,
     scores: scores ?? this.scores,
@@ -66,6 +73,9 @@ class MatchState {
     phoenixReward: phoenixReward ?? this.phoenixReward,
     crownOwner: clearCrown ? null : crownOwner ?? this.crownOwner,
     winner: winner ?? this.winner, hand: hand ?? this.hand,
+    offensiveUsed: offensiveUsed ?? this.offensiveUsed,
+    defensiveUsed: defensiveUsed ?? this.defensiveUsed,
+    shahLosses: shahLosses ?? this.shahLosses,
     note: note ?? this.note,
   );
 
@@ -78,6 +88,8 @@ class MatchState {
     'power': power?.name, 'prediction': prediction,
     'phoenixReward': phoenixReward, 'crownOwner': crownOwner,
     'winner': winner, 'hand': hand, 'note': note,
+    'offensiveUsed': offensiveUsed, 'defensiveUsed': defensiveUsed,
+    'shahLosses': shahLosses,
   };
 
   factory MatchState.fromJson(Map<String, dynamic> data) => MatchState(
@@ -98,6 +110,9 @@ class MatchState {
     crownOwner: data['crownOwner'] as int?,
     winner: data['winner'] as int?,
     hand: data['hand'] as int,
+    offensiveUsed: (data['offensiveUsed'] as bool?) ?? false,
+    defensiveUsed: (data['defensiveUsed'] as bool?) ?? false,
+    shahLosses: ((data['shahLosses'] as List?) ?? [0,0]).cast<int>(),
     note: data['note'] as String,
   );
 

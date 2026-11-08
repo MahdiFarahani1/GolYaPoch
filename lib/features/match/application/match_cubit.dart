@@ -17,7 +17,7 @@ class MatchCubit extends Cubit<MatchState> {
     emit(next);
     if (next.isFinished) {
       _store.archive(next);
-    } else {
+    } else if (remember || next.secondsLeft % 10 == 0 || next.phase != state.phase) {
       _store.save(next);
     }
   }
@@ -54,16 +54,18 @@ class MatchCubit extends Cubit<MatchState> {
     final list = state.cards.map((e) => List<CardPower>.of(e)).toList();
     list[state.guesser].remove(card);
     _apply(state.copyWith(cards: list, power: card, phase: RoundPhase.defendCard,
+      offensiveUsed: true,
       phoenixReward: card == CardPower.phoenix ? CustomRules.phoenixPoints(deficit) : 0,
       note: 'کارت ${card.title} فعال شد؛ فرصت خنثی‌سازی'));
   }
 
   void respondToCard({required bool nullify}) {
     if (state.phase != RoundPhase.defendCard) return;
-    if (nullify && state.nullifiers[state.holder] > 0) {
+    if (nullify && !state.defensiveUsed && state.nullifiers[state.holder] > 0) {
       final updated = List<int>.of(state.nullifiers);
       updated[state.holder]--;
-      _apply(state.copyWith(nullifiers: updated, clearPower: true, clearPrediction: true,
+      _apply(state.copyWith(nullifiers: updated, defensiveUsed: true,
+        clearPower: true, clearPrediction: true,
         phoenixReward: 0, phase: RoundPhase.guess,
         note: 'کارت خنثی شد؛ بازی عادی ادامه دارد'));
     } else {
@@ -83,7 +85,7 @@ class MatchCubit extends Cubit<MatchState> {
 
   /// A correct Hunter or Poison-Hand special call transfers the flower without points.
   void specialChoice({required bool correct}) {
-    if (state.phase != RoundPhase.guess || state.power == null) return;
+    if ((state.phase != RoundPhase.guess && state.phase != RoundPhase.finalGuess) || state.power == null) return;
     if (state.power == CardPower.hunter) {
       if (correct) {
         _capture(0, note: 'شکارچی گل را گرفت؛ بدون امتیاز');
@@ -147,6 +149,7 @@ class MatchCubit extends Cubit<MatchState> {
     _apply(state.copyWith(scores: scores, holder: state.guesser,
       phase: winner == null ? RoundPhase.guess : RoundPhase.finished, winner: winner,
       hand: state.hand + 1, emptyGuesses: 0, freePoisonEmpty: false,
+      offensiveUsed: false, defensiveUsed: false,
       secondsLeft: state.settings.turnSeconds, clearPower: true, clearPrediction: true,
       phoenixReward: 0, note: note));
   }
@@ -159,6 +162,7 @@ class MatchCubit extends Cubit<MatchState> {
     _apply(state.copyWith(scores: scores,
       phase: winner == null ? RoundPhase.guess : RoundPhase.finished, winner: winner,
       hand: state.hand + 1, emptyGuesses: 0, freePoisonEmpty: false,
+      offensiveUsed: false, defensiveUsed: false,
       secondsLeft: state.settings.turnSeconds, clearPower: true, clearPrediction: true,
       phoenixReward: 0, note: wasShah ? 'شاه‌گل حفظ شد؛ قهرمان مشخص شد' : note));
   }
@@ -176,6 +180,7 @@ class MatchCubit extends Cubit<MatchState> {
     scores[state.crownOwner!] = (scores[state.crownOwner!] - 3).clamp(0, 100);
     _apply(state.copyWith(scores: scores, phase: RoundPhase.guess,
       clearCrown: true, hand: state.hand + 1, emptyGuesses: 0,
+      offensiveUsed: false, defensiveUsed: false,
       freePoisonEmpty: false, secondsLeft: state.settings.turnSeconds,
       note: 'عقب‌نشینی؛ ۳ امتیاز کسر شد'));
   }
@@ -198,6 +203,7 @@ class MatchCubit extends Cubit<MatchState> {
     scores[owner] = (scores[owner] - 5).clamp(0, 100);
     _apply(state.copyWith(scores: scores, phase: RoundPhase.guess,
       clearCrown: true, hand: state.hand + 1, emptyGuesses: 0,
+      offensiveUsed: false, defensiveUsed: false,
       freePoisonEmpty: false, secondsLeft: state.settings.turnSeconds,
       note: 'دوئل شکست خورد؛ ۵ امتیاز کسر شد'));
   }
