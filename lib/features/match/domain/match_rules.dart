@@ -91,5 +91,5 @@ abstract final class CustomRules {
   }
 
   static int addPoints(int current, int earned, MatchSettings settings) =>
-      (current + earned).clamp(0, settings.scoreCap);
+      (current + earned).clamp(0, settings.scoreCap).toInt();
 }

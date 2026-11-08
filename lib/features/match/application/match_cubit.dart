@@ -5,7 +5,9 @@ import '../domain/match_state.dart';
 
 /// The phone is a referee, not a sensor. A human confirms each physical result.
 class MatchCubit extends Cubit<MatchState> {
-  MatchCubit(super.initial, {MatchStore? store}) : _store = store ?? MatchStore();
+  MatchCubit(super.initial, {MatchStore? store}) : _store = store ?? MatchStore() {
+    if (!state.isFinished) _store.save(state);
+  }
   final MatchStore _store;
   final List<MatchState> _undo = [];
 
@@ -177,7 +179,7 @@ class MatchCubit extends Cubit<MatchState> {
   void crownRetreat() {
     if (state.phase != RoundPhase.crownChoice || state.crownOwner == null) return;
     final scores = List<int>.of(state.scores);
-    scores[state.crownOwner!] = (scores[state.crownOwner!] - 3).clamp(0, 100);
+    scores[state.crownOwner!] = (scores[state.crownOwner!] - 3).clamp(0, 100).toInt();
     _apply(state.copyWith(scores: scores, phase: RoundPhase.guess,
       clearCrown: true, hand: state.hand + 1, emptyGuesses: 0,
       offensiveUsed: false, defensiveUsed: false,
@@ -206,7 +208,7 @@ class MatchCubit extends Cubit<MatchState> {
       return;
     }
     final scores = List<int>.of(state.scores);
-    scores[owner] = (scores[owner] - 5).clamp(0, 100);
+    scores[owner] = (scores[owner] - 5).clamp(0, 100).toInt();
     _apply(state.copyWith(scores: scores, phase: RoundPhase.guess,
       clearCrown: true, hand: state.hand + 1, emptyGuesses: 0,
       offensiveUsed: false, defensiveUsed: false,
@@ -233,7 +235,7 @@ class MatchCubit extends Cubit<MatchState> {
       final losses = List<int>.of(state.shahLosses);
       losses[oldHolder]++;
       if (losses[oldHolder] == 1) {
-        scores[oldHolder] = (scores[oldHolder] - 3).clamp(0, state.settings.scoreCap);
+        scores[oldHolder] = (scores[oldHolder] - 3).clamp(0, state.settings.scoreCap).toInt();
         _apply(state.copyWith(scores: scores, holder: receiver,
           shahLosses: losses, hand: state.hand + 1,
           emptyGuesses: 0, secondsLeft: state.settings.turnSeconds,
@@ -268,7 +270,7 @@ class MatchCubit extends Cubit<MatchState> {
         state.crownOwner == null || penalty < 0) return;
     final scores = List<int>.of(state.scores);
     final owner = state.crownOwner!;
-    scores[owner] = (scores[owner] - penalty).clamp(0, state.settings.scoreCap);
+    scores[owner] = (scores[owner] - penalty).clamp(0, state.settings.scoreCap).toInt();
     _apply(state.copyWith(scores: scores, clearCrown: true,
       phase: RoundPhase.guess, hand: state.hand + 1,
       secondsLeft: state.settings.turnSeconds, emptyGuesses: 0,
