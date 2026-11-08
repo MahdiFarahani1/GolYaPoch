@@ -248,19 +248,94 @@ class _CustomActions extends StatelessWidget {
 }
 
 class _ManualActions extends StatelessWidget {
-  const _ManualActions({required this.state,required this.cubit});
+  const _ManualActions({required this.state, required this.cubit});
   final MatchState state;
   final MatchCubit cubit;
-  @override Widget build(BuildContext context)=>RoyalPanel(child:Column(children:[
-    const RoyalSectionTitle('داوری دستی این حالت'),
-    const Text('تا زمان تأیید جزئیات رسمی تمام کارت‌ها و مکعب، نتایج را دستی ثبت کنید.',
-      textAlign:TextAlign.center,style:TextStyle(color:RoyalTheme.muted,fontSize:12)),
-    const SizedBox(height:14),
-    for(final points in [0,1,2,3,4,5])Padding(padding:const EdgeInsets.only(bottom:7),
-      child:OutlinedButton(onPressed:()=>cubit.manualEvent(found:true,points:points),
-        child:Text('گل گرفته شد • ${points==0?'بدون امتیاز':'$points امتیاز'}'))),
-    const SizedBox(height:8),
-    FilledButton(onPressed:()=>cubit.manualEvent(found:false,points:1),
-      child:const Text('گل حفظ شد • یک امتیاز')),
-  ]));
+
+  @override Widget build(BuildContext context) {
+    if (state.phase == RoundPhase.captainDuel) {
+      final owner = state.crownOwner;
+      if (owner == null) return const SizedBox.shrink();
+      return RoyalPanel(highlight: true, child: Column(children: [
+        const Text('دوئل شاه‌گل فیلیمو', style: TextStyle(
+          fontWeight: FontWeight.w900, fontSize: 19)),
+        const SizedBox(height: 10),
+        const Text('نتیجه دوئل فیزیکی را داور ثبت می‌کند.',
+          textAlign: TextAlign.center),
+        const SizedBox(height: 15),
+        FilledButton(onPressed: () => cubit.resolveCaptainDuel(ownerProtected: true),
+          child: Text('برنده: ${state.teams[owner]}')),
+        const SizedBox(height: 9),
+        OutlinedButton(onPressed: () => cubit.resolveCaptainDuel(ownerProtected: false),
+          child: Text('برنده: ${state.teams[1 - owner]}')),
+      ]));
+    }
+
+    if (state.phase == RoundPhase.crownChoice) {
+      return RoyalPanel(highlight: true, child: Column(children: [
+        const Text('نتیجه شاه‌گل • داوری با دفترچه اصلی',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 9),
+        const Text('قانون جریمه یا برد را با نسخه فیزیکی بازی تطبیق دهید.',
+          textAlign: TextAlign.center, style: TextStyle(color: RoyalTheme.muted)),
+        const SizedBox(height: 14),
+        OutlinedButton(onPressed: () => cubit.manualCrownContinue(),
+          child: const Text('ادامه مسابقه بدون جریمه')),
+        const SizedBox(height: 9),
+        OutlinedButton(onPressed: () => cubit.manualCrownContinue(penalty: 3),
+          child: const Text('ادامه مسابقه با کسر ۳ امتیاز')),
+        const SizedBox(height: 9),
+        FilledButton(onPressed: () => cubit.manualDeclareWinner(state.holder),
+          child: Text('اعلام برنده: ${state.teams[state.holder]}')),
+        const SizedBox(height: 9),
+        OutlinedButton(onPressed: () => cubit.manualDeclareWinner(1 - state.holder),
+          child: Text('اعلام برنده: ${state.teams[1 - state.holder]}')),
+      ]));
+    }
+
+    return Column(children: [
+      RoyalPanel(child: Column(children: [
+        const RoyalSectionTitle('داوری گل و پوچ'),
+        const Text('کارت‌ها و مکعب طبق نسخه واقعی اجرا می‌شوند؛ '
+          'نتیجه و امتیاز را در این صفحه ثبت کنید.',
+          textAlign: TextAlign.center, style: TextStyle(color: RoyalTheme.muted, fontSize: 12)),
+        const SizedBox(height: 14),
+        for (final points in [0,1,2,3,4,5])
+          Padding(padding: const EdgeInsets.only(bottom: 7),
+            child: OutlinedButton(
+              onPressed: () => cubit.manualEvent(found: true, points: points),
+              child: Text('گل گرفته شد • ${points == 0 ? 'بدون امتیاز' : '$points امتیاز'}'))),
+        const SizedBox(height: 8),
+        FilledButton(onPressed: () => cubit.manualEvent(found: false, points: 1),
+          child: const Text('گل حفظ شد • یک امتیاز')),
+      ])),
+      const SizedBox(height: 13),
+      RoyalPanel(child: Column(children: [
+        const RoyalSectionTitle('تنظیم نتیجه توسط داور'),
+        for (var team = 0; team < 2; team++)
+          Row(children: [
+            Expanded(child: Text(state.teams[team], overflow: TextOverflow.ellipsis)),
+            IconButton(tooltip: 'کسر امتیاز',
+              onPressed: () => cubit.manualAdjustScore(team, -1),
+              icon: const Icon(Icons.remove_circle_outline, color: RoyalTheme.gold)),
+            IconButton(tooltip: 'افزودن امتیاز',
+              onPressed: () => cubit.manualAdjustScore(team, 1),
+              icon: const Icon(Icons.add_circle_outline, color: RoyalTheme.gold)),
+          ]),
+        const SizedBox(height: 10),
+        TextButton(onPressed: () => _confirmFinish(context),
+          child: const Text('اعلام نتیجه نهایی توسط داور')),
+      ])),
+    ]);
+  }
+
+  Future<void> _confirmFinish(BuildContext context) async {
+    final winner = await showDialog<int>(context: context, builder: (dialog) =>
+      AlertDialog(title: const Text('کدام تیم برنده شد؟'), actions: [
+        for (var i = 0; i < 2; i++) TextButton(
+          onPressed: () => Navigator.pop(dialog, i),
+          child: Text(state.teams[i])),
+      ]));
+    if (winner != null) cubit.manualDeclareWinner(winner);
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/royal_theme.dart';
 import '../../core/widgets/royal_widgets.dart';
 import '../match/data/match_store.dart';
@@ -92,7 +93,9 @@ class _ModeTile extends StatelessWidget {
           Container(height: 68, width: 68, decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(19), color: Colors.black.withValues(alpha: .22),
             border: Border.all(color: RoyalTheme.gold.withValues(alpha: .25))),
-            child: Icon(icon, size: 34, color: RoyalTheme.paleGold)),
+            child: ClipRRect(borderRadius: BorderRadius.circular(15),
+              child: SvgPicture.asset('assets/cards/mode_${mode.name}.svg',
+                fit: BoxFit.cover, semanticsLabel: label))),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
