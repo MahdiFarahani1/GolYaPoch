@@ -13,7 +13,8 @@ void main() {
     expect(find.text('گُل یا پوچ'), findsOneWidget);
     expect(find.text('استودیوی فیلیمو'), findsOneWidget);
     expect(find.text('تالار شاه‌گل'), findsOneWidget);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -450));
+    await tester.scrollUntilVisible(find.text('نبرد گل'), 190,
+      scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     expect(find.text('نبرد گل'), findsOneWidget);
   });
