@@ -7,6 +7,7 @@ import '../../../core/theme/royal_theme.dart';
 import '../../../core/widgets/royal_widgets.dart';
 import '../../guide/guide_page.dart';
 import '../application/match_cubit.dart';
+import '../domain/physical_cards.dart';
 import '../domain/match_rules.dart';
 import '../domain/match_state.dart';
 
@@ -294,6 +295,37 @@ class _ManualActions extends StatelessWidget {
     }
 
     return Column(children: [
+      _PhysicalCardDeck(state:state,cubit:cubit),
+      const SizedBox(height:13),
+      if(state.settings.mode==GameMode.shahGol)
+        RoyalPanel(child:Column(children:[
+          const RoyalSectionTitle('موجودی میلی • مکعب اصلی'),
+          const Text('کسب میلی از مکعب طبق قوانین نسخه فیزیکی ثبت می‌شود.',
+            style:TextStyle(color:RoyalTheme.muted,fontSize:12),
+            textAlign:TextAlign.center),
+          for(var team=0;team<2;team++) Row(children:[
+            Expanded(child:Text(state.teams[team],overflow:TextOverflow.ellipsis)),
+            IconButton(onPressed:()=>cubit.manualAdjustMilli(team,-1),
+              icon:const Icon(Icons.remove_circle_outline,color:RoyalTheme.gold)),
+            Text('${state.milliBalances[team]} میلی',style:const TextStyle(
+              fontWeight:FontWeight.w900,color:RoyalTheme.paleGold)),
+            IconButton(onPressed:()=>cubit.manualAdjustMilli(team,1),
+              icon:const Icon(Icons.add_circle_outline,color:RoyalTheme.gold)),
+          ]),
+        ])),
+      if(state.settings.mode==GameMode.filimo && state.settings.filimoCubeEnabled)
+        RoyalPanel(child:Row(children:[
+          SizedBox(width:78,height:78,child:SvgPicture.asset('assets/cards/cube.svg')),
+          const SizedBox(width:13),
+          const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('مکعب امتیازافزا فعال',style:TextStyle(
+              fontWeight:FontWeight.w900,color:RoyalTheme.gold)),
+            SizedBox(height:6),
+            Text('مقدار واقعی مکعب را با دکمه‌های داوری ثبت کنید.',
+              style:TextStyle(color:RoyalTheme.muted,fontSize:12)),
+          ])),
+        ])),
+      const SizedBox(height:13),
       RoyalPanel(child: Column(children: [
         const RoyalSectionTitle('داوری گل و پوچ'),
         const Text('کارت‌ها و مکعب طبق نسخه واقعی اجرا می‌شوند؛ '
@@ -337,5 +369,77 @@ class _ManualActions extends StatelessWidget {
           child: Text(state.teams[i])),
       ]));
     if (winner != null) cubit.manualDeclareWinner(winner);
+  }
+}
+
+class _PhysicalCardDeck extends StatelessWidget {
+  const _PhysicalCardDeck({required this.state,required this.cubit});
+  final MatchState state;
+  final MatchCubit cubit;
+  @override Widget build(BuildContext context) {
+    final cards=state.physicalCards[state.guesser];
+    return RoyalPanel(child:Column(children:[
+      const RoyalSectionTitle('کارت‌های باقی‌مانده تیم حدس‌زننده'),
+      Text(state.teams[state.guesser],style:const TextStyle(
+        color:RoyalTheme.gold,fontWeight:FontWeight.w800)),
+      const SizedBox(height:9),
+      if(cards.isEmpty)const Text('کارت باقی نمانده',
+        style:TextStyle(color:RoyalTheme.muted))
+      else SizedBox(height:177,child:ListView(
+        scrollDirection:Axis.horizontal,children:[
+          for(final id in cards)Padding(padding:const EdgeInsets.only(left:10),
+            child:GestureDetector(onTap:()=>_showCard(context,id),
+              child:SizedBox(width:100,child:Column(children:[
+                SizedBox(height:137,child:SvgPicture.asset(
+                  PhysicalCards.all[id]!.asset,fit:BoxFit.contain)),
+                const SizedBox(height:7),
+                Text(PhysicalCards.all[id]!.title,
+                  maxLines:2,textAlign:TextAlign.center,
+                  style:const TextStyle(fontSize:11,fontWeight:FontWeight.w800)),
+              ]))),
+          ),
+        ])),
+      const SizedBox(height:10),
+      Text(state.offensiveUsed?'در این دست کارت استفاده شده است.'
+          :'برای دیدن جزئیات، یک کارت را لمس کنید.',
+        style:const TextStyle(fontSize:11,color:RoyalTheme.muted)),
+    ]));
+  }
+
+  void _showCard(BuildContext context,String id) {
+    final card=PhysicalCards.all[id]!;
+    final cost=ValueNotifier<int>(0);
+    final available=state.milliBalances[state.guesser];
+    showModalBottomSheet<void>(context:context,showDragHandle:true,
+      backgroundColor:RoyalTheme.ink,isScrollControlled:true,
+      builder:(modal)=>SafeArea(child:Padding(
+        padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[
+          SizedBox(height:198,child:SvgPicture.asset(card.asset)),
+          const SizedBox(height:9),
+          Text(card.title,style:const TextStyle(color:RoyalTheme.gold,
+            fontSize:21,fontWeight:FontWeight.w900)),
+          const SizedBox(height:9),
+          Text(card.instructions,textAlign:TextAlign.center,
+            style:const TextStyle(fontSize:13)),
+          if(state.settings.mode==GameMode.shahGol)...[
+            const SizedBox(height:12),
+            const Text('هزینه میلی را از روی دفترچه اصلی مشخص کنید.'),
+            ValueListenableBuilder<int>(valueListenable:cost,builder:(context,value,_)=>Row(
+              mainAxisAlignment:MainAxisAlignment.center,children:[
+                IconButton(onPressed:value>0?()=>cost.value=value-1:null,
+                  icon:const Icon(Icons.remove_circle_outline)),
+                Text('$value / $available',style:const TextStyle(
+                  color:RoyalTheme.gold,fontWeight:FontWeight.bold)),
+                IconButton(onPressed:value<available?()=>cost.value=value+1:null,
+                  icon:const Icon(Icons.add_circle_outline)),
+              ])),
+          ],
+          const SizedBox(height:17),
+          FilledButton(onPressed:state.offensiveUsed?null:(){
+            cubit.manualUseCard(id,milliCost:cost.value);
+            Navigator.pop(modal);
+          },child:const Text('کارت را مصرف کن')),
+          const SizedBox(height:8),
+        ])))).whenComplete(cost.dispose);
   }
 }
