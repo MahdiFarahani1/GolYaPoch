@@ -9,6 +9,7 @@ import '../match/presentation/match_page.dart';
 import '../match/presentation/setup_page.dart';
 import '../guide/guide_page.dart';
 import '../history/history_page.dart';
+import '../cards/card_gallery_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -65,6 +66,20 @@ class HomePage extends StatelessWidget {
         ])),
         IconButton(onPressed: () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const GuidePage())), icon: const Icon(Icons.arrow_back_ios_new, color: RoyalTheme.gold)),
+      ])),
+      const SizedBox(height: 14),
+      RoyalPanel(child: Row(children: [
+        const Icon(Icons.auto_awesome, color: RoyalTheme.gold, size: 35),
+        const SizedBox(width: 14),
+        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('گالری کارت‌های اختصاصی',style:TextStyle(fontSize:16,fontWeight:FontWeight.w800)),
+          SizedBox(height:4),
+          Text('دیدن طراحی هر کارت در سه میدان',
+            style:TextStyle(fontSize:12,color:RoyalTheme.muted)),
+        ])),
+        IconButton(onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const CardGalleryPage())),
+          icon: const Icon(Icons.arrow_back_ios_new,color:RoyalTheme.gold)),
       ])),
       const SizedBox(height: 24),
       const Text('بدون اینترنت • بدون حساب کاربری • ثبت مسابقه روی همین دستگاه',
