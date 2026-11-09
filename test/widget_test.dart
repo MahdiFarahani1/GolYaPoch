@@ -11,11 +11,11 @@ void main() {
     await tester.pumpWidget(const GolYaPochApp());
     await tester.pumpAndSettle();
     expect(find.text('گُل یا پوچ'), findsOneWidget);
-    expect(find.text('استودیوی فیلیمو'), findsOneWidget);
-    expect(find.text('تالار شاه‌گل'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('نبرد گل'), 190,
-      scrollable: find.byType(Scrollable).first);
-    await tester.pumpAndSettle();
-    expect(find.text('نبرد گل'), findsOneWidget);
+    for (final name in ['استودیوی فیلیمو','تالار شاه‌گل','نبرد گل']) {
+      await tester.scrollUntilVisible(find.text(name), 160,
+        scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
+      expect(find.text(name), findsOneWidget);
+    }
   });
 }
