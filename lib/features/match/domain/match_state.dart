@@ -1,4 +1,5 @@
 import 'match_rules.dart';
+import 'physical_cards.dart';
 
 class MatchState {
   const MatchState({
@@ -21,6 +22,8 @@ class MatchState {
     this.offensiveUsed = false,
     this.defensiveUsed = false,
     this.shahLosses = const [0, 0],
+    this.physicalCards = const [[], []],
+    this.milliBalances = const [0,0],
     this.note = 'مسابقه آغاز شد',
   });
 
@@ -43,6 +46,8 @@ class MatchState {
   final bool offensiveUsed;
   final bool defensiveUsed;
   final List<int> shahLosses;
+  final List<List<String>> physicalCards;
+  final List<int> milliBalances;
   final String note;
 
   int get guesser => 1 - holder;
@@ -59,7 +64,8 @@ class MatchState {
     bool clearPower = false, bool? prediction, bool clearPrediction = false,
     int? phoenixReward, int? crownOwner, bool clearCrown = false,
     int? winner, int? hand, bool? offensiveUsed, bool? defensiveUsed,
-    List<int>? shahLosses, String? note,
+    List<int>? shahLosses, List<List<String>>? physicalCards,
+    List<int>? milliBalances, String? note,
   }) => MatchState(
     settings: settings, teams: teams,
     scores: scores ?? this.scores,
@@ -76,6 +82,8 @@ class MatchState {
     offensiveUsed: offensiveUsed ?? this.offensiveUsed,
     defensiveUsed: defensiveUsed ?? this.defensiveUsed,
     shahLosses: shahLosses ?? this.shahLosses,
+    physicalCards: physicalCards ?? this.physicalCards,
+    milliBalances: milliBalances ?? this.milliBalances,
     note: note ?? this.note,
   );
 
@@ -90,6 +98,7 @@ class MatchState {
     'winner': winner, 'hand': hand, 'note': note,
     'offensiveUsed': offensiveUsed, 'defensiveUsed': defensiveUsed,
     'shahLosses': shahLosses,
+    'physicalCards': physicalCards, 'milliBalances': milliBalances,
   };
 
   factory MatchState.fromJson(Map<String, dynamic> data) => MatchState(
@@ -113,14 +122,23 @@ class MatchState {
     offensiveUsed: (data['offensiveUsed'] as bool?) ?? false,
     defensiveUsed: (data['defensiveUsed'] as bool?) ?? false,
     shahLosses: ((data['shahLosses'] as List?) ?? [0,0]).cast<int>(),
+    physicalCards: ((data['physicalCards'] as List?) ?? [[],[]])
+      .map((e) => (e as List).cast<String>()).toList(),
+    milliBalances: ((data['milliBalances'] as List?) ?? [0,0]).cast<int>(),
     note: data['note'] as String,
   );
 
   factory MatchState.start(MatchSettings settings, String teamA, String teamB, {int holder = 0}) {
     final initial = CardPower.values.toList();
+    final seed=DateTime.now().microsecondsSinceEpoch;
+    final physical= switch(settings.mode) {
+      GameMode.filimo => [PhysicalCards.filimoDeck(seed), PhysicalCards.filimoDeck(seed+7)],
+      GameMode.shahGol => [PhysicalCards.shahGolDeck(), PhysicalCards.shahGolDeck()],
+      GameMode.nabardGol => <List<String>>[[],[]],
+    };
     return MatchState(settings: settings, teams: [teamA, teamB], scores: [0, 0],
       holder: holder, phase: RoundPhase.guess,
       cards: [List.of(initial), List.of(initial)], nullifiers: [2, 2],
-      secondsLeft: settings.turnSeconds);
+      secondsLeft: settings.turnSeconds,physicalCards:physical);
   }
 }
