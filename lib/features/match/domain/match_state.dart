@@ -24,6 +24,7 @@ class MatchState {
     this.shahLosses = const [0, 0],
     this.physicalCards = const [[], []],
     this.milliBalances = const [0,0],
+    this.isPaused = false,
     this.note = 'مسابقه آغاز شد',
   });
 
@@ -48,6 +49,7 @@ class MatchState {
   final List<int> shahLosses;
   final List<List<String>> physicalCards;
   final List<int> milliBalances;
+  final bool isPaused;
   final String note;
 
   int get guesser => 1 - holder;
@@ -65,7 +67,7 @@ class MatchState {
     int? phoenixReward, int? crownOwner, bool clearCrown = false,
     int? winner, int? hand, bool? offensiveUsed, bool? defensiveUsed,
     List<int>? shahLosses, List<List<String>>? physicalCards,
-    List<int>? milliBalances, String? note,
+    List<int>? milliBalances, bool? isPaused, String? note,
   }) => MatchState(
     settings: settings, teams: teams,
     scores: scores ?? this.scores,
@@ -84,6 +86,7 @@ class MatchState {
     shahLosses: shahLosses ?? this.shahLosses,
     physicalCards: physicalCards ?? this.physicalCards,
     milliBalances: milliBalances ?? this.milliBalances,
+    isPaused: isPaused ?? this.isPaused,
     note: note ?? this.note,
   );
 
@@ -99,6 +102,7 @@ class MatchState {
     'offensiveUsed': offensiveUsed, 'defensiveUsed': defensiveUsed,
     'shahLosses': shahLosses,
     'physicalCards': physicalCards, 'milliBalances': milliBalances,
+    'isPaused': isPaused,
   };
 
   factory MatchState.fromJson(Map<String, dynamic> data) => MatchState(
@@ -125,6 +129,7 @@ class MatchState {
     physicalCards: ((data['physicalCards'] as List?) ?? [[],[]])
       .map((e) => (e as List).cast<String>()).toList(),
     milliBalances: ((data['milliBalances'] as List?) ?? [0,0]).cast<int>(),
+    isPaused: (data['isPaused'] as bool?) ?? false,
     note: data['note'] as String,
   );
 

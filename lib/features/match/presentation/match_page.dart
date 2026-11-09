@@ -34,6 +34,9 @@ class _MatchBodyState extends State<_MatchBody> {
     final cubit=context.read<MatchCubit>();
     return BlocBuilder<MatchCubit,MatchState>(builder:(context,s)=>RoyalScaffold(
       appBar:AppBar(title:Text(s.settings.mode.title),actions:[
+        if (!s.isFinished)IconButton(tooltip:s.isPaused?'ادامه مسابقه':'توقف مسابقه',
+          onPressed:cubit.togglePause,
+          icon:Icon(s.isPaused?Icons.play_circle_outline:Icons.pause_circle_outline)),
         IconButton(tooltip:'بازگشت حرکت',onPressed:cubit.canUndo?cubit.undo:null,
           icon:const Icon(Icons.undo_rounded)),
         IconButton(tooltip:'قوانین',onPressed:()=>Navigator.push(context,
@@ -79,8 +82,18 @@ class _MatchBodyState extends State<_MatchBody> {
             backgroundColor:Colors.white10,color:RoyalTheme.gold,minHeight:4,borderRadius:BorderRadius.circular(5)),
         ])),
         const SizedBox(height:13),
-        if(s.isFinished)RoyalPanel(highlight:true,child:Column(children:[
-          const CrownArt(size:106),
+        if(s.isPaused && !s.isFinished)RoyalPanel(highlight:true,child:Column(children:[
+          const Icon(Icons.pause_circle_filled,size:56,color:RoyalTheme.gold),
+          const SizedBox(height:12),
+          const Text('مسابقه متوقف شده',style:TextStyle(fontSize:21,fontWeight:FontWeight.w900)),
+          const SizedBox(height:12),
+          FilledButton(onPressed:cubit.togglePause,child:const Text('ادامه مسابقه')),
+        ]))
+        else if(s.isFinished)RoyalPanel(highlight:true,child:Column(children:[
+          TweenAnimationBuilder<double>(tween:Tween(begin:.6,end:1),
+            duration:const Duration(milliseconds:850),curve:Curves.elasticOut,
+            builder:(context,value,child)=>Transform.scale(scale:value,child:child),
+            child:const CrownArt(size:106)),
           const SizedBox(height:12),
           Text('${s.teams[s.winner!]} برنده شد!',style:const TextStyle(
             fontSize:23,fontWeight:FontWeight.w900)),
@@ -116,7 +129,11 @@ class _ScoreCard extends StatelessWidget {
       Text(team,maxLines:1,overflow:TextOverflow.ellipsis,
         style:const TextStyle(fontSize:15,fontWeight:FontWeight.w900)),
       const SizedBox(height:9),
-      Text('$score',style:const TextStyle(fontSize:42,color:RoyalTheme.paleGold,fontWeight:FontWeight.w900)),
+      AnimatedSwitcher(duration:const Duration(milliseconds:420),
+        transitionBuilder:(child,animation)=>ScaleTransition(
+          scale:CurvedAnimation(parent:animation,curve:Curves.easeOutBack),child:child),
+        child:Text('$score',key:ValueKey(score),style:const TextStyle(
+          fontSize:42,color:RoyalTheme.paleGold,fontWeight:FontWeight.w900))),
       Text(isHolder?'● صاحب گل':'در حال حدس',
         style:const TextStyle(fontSize:11,color:RoyalTheme.muted)),
     ]));

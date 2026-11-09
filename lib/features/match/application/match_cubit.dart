@@ -32,8 +32,14 @@ class MatchCubit extends Cubit<MatchState> {
     _store.save(previous);
   }
 
+  void togglePause() {
+    if (state.isFinished) return;
+    _apply(state.copyWith(isPaused: !state.isPaused,
+      note: state.isPaused ? 'مسابقه ادامه پیدا کرد' : 'مسابقه متوقف شد'));
+  }
+
   void tick() {
-    if (state.isFinished || state.phase == RoundPhase.crownChoice || state.phase == RoundPhase.captainDuel || state.phase == RoundPhase.defendCard || state.phase == RoundPhase.predict || state.phase == RoundPhase.finalGuess) return;
+    if (state.isPaused || state.isFinished || state.phase == RoundPhase.crownChoice || state.phase == RoundPhase.captainDuel || state.phase == RoundPhase.defendCard || state.phase == RoundPhase.predict || state.phase == RoundPhase.finalGuess) return;
     if (state.secondsLeft > 1) {
       _apply(state.copyWith(secondsLeft: state.secondsLeft - 1), remember: false);
     } else {
@@ -220,6 +226,7 @@ class MatchCubit extends Cubit<MatchState> {
   /// Physically play the original card; the app consumes it and records the
   /// chosen milli cost without inventing unverified official effects.
   void manualUseCard(String cardId, {int milliCost = 0}) {
+    if (state.settings.mode == GameMode.filimo && state.isShahHand) return;
     if (state.isCustom || state.phase != RoundPhase.guess ||
         state.offensiveUsed || milliCost < 0 ||
         !state.physicalCards[state.guesser].contains(cardId) ||
