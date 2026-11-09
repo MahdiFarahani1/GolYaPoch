@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/theme/royal_theme.dart';
 import '../../core/widgets/royal_widgets.dart';
 import '../match/domain/match_rules.dart';
+import '../match/domain/physical_cards.dart';
 
 class CatalogEntry {
   const CatalogEntry(this.title, this.asset, this.description, {this.verified = true});
@@ -36,18 +37,12 @@ class _CardGalleryBody extends StatelessWidget {
         'طرح یکپارچه پشت کارت‌های اختصاصی.'),
     ],
     GameMode.filimo => [
-      const CatalogEntry('آنتن','assets/cards/filimo_anten.svg',
-        'کارت شناخته‌شده در سبک فیلیمو؛ اثر دقیق طبق قوانین نسخه مرجع.',verified:false),
-      const CatalogEntry('دوئل','assets/cards/filimo_duel.svg',
-        'کارت مربوط به چالش دوئل؛ جزئیات طبق نسخه مرجع.',verified:false),
-      const CatalogEntry('گوی صدادار','assets/cards/filimo_soundSphere.svg',
-        'گوی ویژه مسابقه؛ اثر دقیق طبق قوانین نسخه مرجع.',verified:false),
-      const CatalogEntry('یک تیر و دو نشان','assets/cards/filimo_doubleSight.svg',
-        'امکان ویژه برای تیم حدس‌زننده؛ جزئیات طبق نسخه مرجع.',verified:false),
-      const CatalogEntry('پوچ اضافه','assets/cards/filimo_empty.svg',
-        'نوعی کارت کمکی؛ عنوان و شیوه اجرا مطابق بسته مرجع بررسی شود.',verified:false),
+      for(final id in const ['antenna','duel','largeSphere','soundSphere',
+        'doubleSight','extraEmpty','eliminateFist','sparrow1','sparrow2'])
+        CatalogEntry(PhysicalCards.all[id]!.title,PhysicalCards.all[id]!.asset,
+          PhysicalCards.all[id]!.instructions,verified:true),
       const CatalogEntry('مکعب امتیازافزا','assets/cards/cube.svg',
-        'در تنظیمات فیلیمو می‌توان مکعب را فعال یا غیرفعال کرد.',verified:true),
+        'در تنظیمات فیلیمو می‌توان مکعب را فعال یا غیرفعال کرد.'),
     ],
     GameMode.shahGol => [
       const CatalogEntry('شاه‌کش','assets/cards/shah_shahkesh.svg',
