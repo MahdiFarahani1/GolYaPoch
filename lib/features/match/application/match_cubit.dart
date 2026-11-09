@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/match_store.dart';
 import '../domain/match_rules.dart';
+import '../domain/physical_cards.dart';
 import '../domain/match_state.dart';
 
 /// The phone is a referee, not a sensor. A human confirms each physical result.
@@ -216,6 +217,34 @@ class MatchCubit extends Cubit<MatchState> {
       note: 'دوئل شکست خورد؛ ۵ امتیاز کسر شد'));
   }
 
+  /// Physically play the original card; the app consumes it and records the
+  /// chosen milli cost without inventing unverified official effects.
+  void manualUseCard(String cardId, {int milliCost = 0}) {
+    if (state.isCustom || state.phase != RoundPhase.guess ||
+        state.offensiveUsed || milliCost < 0 ||
+        !state.physicalCards[state.guesser].contains(cardId) ||
+        !PhysicalCards.all.containsKey(cardId)) return;
+    if (state.settings.mode == GameMode.filimo &&
+        state.settings.playersPerTeam * 2 - state.emptyGuesses < 3) return;
+    if (state.settings.mode == GameMode.shahGol &&
+        milliCost > state.milliBalances[state.guesser]) return;
+    final remaining=state.physicalCards.map((cards)=>List<String>.of(cards)).toList();
+    remaining[state.guesser].remove(cardId);
+    final milli=List<int>.of(state.milliBalances);
+    if(state.settings.mode==GameMode.shahGol) milli[state.guesser] -= milliCost;
+    _apply(state.copyWith(physicalCards:remaining,milliBalances:milli,
+      offensiveUsed:true,
+      note:'کارت ${PhysicalCards.all[cardId]!.title} مصرف شد؛ اثر را در بازی واقعی اجرا کنید'));
+  }
+
+  void manualAdjustMilli(int team, int delta) {
+    if (state.settings.mode != GameMode.shahGol || state.isFinished ||
+        team < 0 || team > 1) return;
+    final milli=List<int>.of(state.milliBalances);
+    milli[team] = (milli[team]+delta).clamp(0,999).toInt();
+    _apply(state.copyWith(milliBalances:milli,note:'موجودی میلی توسط داور ثبت شد'));
+  }
+
   /// The two existing physical games are assisted referee modes.
   /// Unverified card effects are entered as points by a human official.
   void manualEvent({required bool found, required int points}) {
@@ -238,7 +267,8 @@ class MatchCubit extends Cubit<MatchState> {
         scores[oldHolder] = (scores[oldHolder] - 3).clamp(0, state.settings.scoreCap).toInt();
         _apply(state.copyWith(scores: scores, holder: receiver,
           shahLosses: losses, hand: state.hand + 1,
-          emptyGuesses: 0, secondsLeft: state.settings.turnSeconds,
+          emptyGuesses: 0, offensiveUsed:false, defensiveUsed:false,
+          secondsLeft: state.settings.turnSeconds,
           phase: RoundPhase.guess,
           note: 'اولین شکست شاه‌گل فیلیمو؛ ۳ امتیاز کم شد'));
       } else {
@@ -259,6 +289,7 @@ class MatchCubit extends Cubit<MatchState> {
     _apply(state.copyWith(scores: scores, holder: receiver,
       winner: winner, phase: winner == null ? RoundPhase.guess : RoundPhase.finished,
       hand: state.hand + 1, secondsLeft: state.settings.turnSeconds,
+      offensiveUsed:false, defensiveUsed:false,
       emptyGuesses: 0,
       note: found ? 'گل گرفته شد' : 'گل حفظ شد'));
   }
@@ -274,6 +305,7 @@ class MatchCubit extends Cubit<MatchState> {
     _apply(state.copyWith(scores: scores, clearCrown: true,
       phase: RoundPhase.guess, hand: state.hand + 1,
       secondsLeft: state.settings.turnSeconds, emptyGuesses: 0,
+      offensiveUsed:false, defensiveUsed:false,
       note: 'نتیجه شاه‌گل توسط داور ثبت شد'));
   }
 
