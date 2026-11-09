@@ -14,6 +14,12 @@ jobs:
         with:
           channel: stable
           cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure Flutter JDK
+        run: flutter config --jdk-dir="$JAVA_HOME"
       - name: Restore generated Flutter Android wrapper
         run: flutter create --platforms=android --project-name golyapooch --org com.mahdi .
       - name: Resolve dependencies
