@@ -28,7 +28,7 @@ class HomePage extends StatelessWidget {
       ]),
       const SizedBox(height: 28),
       RoyalPanel(highlight: true, child: Column(children: [
-        const CrownArt(size: 118),
+        AspectRatio(aspectRatio:1.84,child:SvgPicture.asset('assets/illustrations/royal_arena.svg',fit:BoxFit.contain)),
         const Text('میدان نبرد آماده است', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
         const SizedBox(height: 8),
         const Text('سه میدان، سه قانون، یک برنده', textAlign: TextAlign.center,
